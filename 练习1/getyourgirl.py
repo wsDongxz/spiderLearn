@@ -110,7 +110,7 @@ class GetYourGirl(object):
         print('--------->'.ljust(15, ' '), '图片库信息获取成功：共获取{}/{}页, 获取图片库{}个'.format(pageCount-1, len(self.sehRspPageUrls), pageLibCount-1))
         # print(self.rspAllPagePicLibDict[1])
 
-    def getLibAllJpg(self, jpgSavePath=None, jpgLibUrl=None):
+    def getLibAllJpg(self, jpgSavePath=None, jpgLibUrl=None, libNo=0):
         '''
         :param jpgSavePath:  Jpg文件的保存路径
         :param jpgLibUrl: ： JpgLib的Url地址，每一个Url地址下面包含很多页面
@@ -131,13 +131,15 @@ class GetYourGirl(object):
         time.sleep(3.5)
         # print(self.jpgPageUrl)
         # print('==============')
+        pageCount = 1
         for page in self.jpgPageUrl:
-            print('=================================')
+            # print('=================================')
+            print('--------->'.ljust(15, ' '), '获取库 {} 第 {} 页图片中... ...'.format(libNo, pageCount))
             self.__getJpgForUrl(page, jpgSavePath)
             time.sleep(3.5)  # 管理员设置3.5s访问一下
+            pageCount += 1
 
     def  __getJpgForUrl(self, jpgPageUrl=None, jpgSavePath=None):
-        jpgCount = 1
         sehReq = urllib.request.Request(url=jpgPageUrl, headers=self.__headers)
         response = urllib.request.urlopen(url=sehReq, context=self.__context)
         jpgLibSoup = BeautifulSoup(markup=response, features='lxml')
@@ -146,6 +148,11 @@ class GetYourGirl(object):
             imgFileUrl = ret['src']
             jpgReq = urllib.request.Request(url=imgFileUrl, headers=self.__headers)
             response = urllib.request.urlopen(url=jpgReq, context=self.__context)
+            jpgFileName = imgFileUrl[imgFileUrl.rfind('/') + 1 :]
+            jpgFilePath = os.path.join(jpgSavePath, jpgFileName)
+            # print('jpgFilePath', jpgFilePath)
+            with open(jpgFilePath, 'wb') as jpgObj:
+                jpgObj.write(response.read())
 
     def __creatPicFilePath(self, modelName=None, picLibName=None):
 
@@ -177,6 +184,7 @@ class GetYourGirl(object):
             endPage = startPage
 
         # 获取数据也Url
+
         for page in range(startPage, endPage+1):
             # 得到每一页的图片库信息：库名字、库链接
             pageUrlLibs = self.rspAllPagePicLibDict[page]
@@ -191,12 +199,15 @@ class GetYourGirl(object):
                 print('--------->'.ljust(15, ' '), '正在处理第 {} 页，图片库 {}'.format(page, libCount))
                 # print(lib['picLibName'])
                 # print(lib['picLibUrl'])
-                jpgLibName = str(libCount) + '_' + lib['picLibName']
+                jpgLibName = str(page) + "_" + str(libCount) + '_' + lib['picLibName']
                 jpgLibUrl = lib['picLibUrl']
                 jpgLibSavePath = self.__creatPicFilePath(modelName=self.sehModel, picLibName=jpgLibName)
-                self.getLibAllJpg(jpgLibSavePath, jpgLibUrl)
+                self.getLibAllJpg(jpgLibSavePath, jpgLibUrl, libCount)
                 libCount += 1
                 # print('jpgLibSavePath', jpgLibSavePath)
+
+    def bgSelect(self):
+        pass
 
 
     def run(self, startPage=1, endPage=1):
